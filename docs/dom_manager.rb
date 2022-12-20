@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'js'
 
 module DomManager
@@ -28,7 +30,7 @@ module DomManager
   def set_attributes(target_node, attributes)
     attributes.each do |key, value|
       if event_attr?(key)
-        event_name = key[2..-1]
+        event_name = key[2..]
         target_node.addEventListener(event_name, value)
       else
         target_node.setAttribute(key.to_s, value)
@@ -37,14 +39,14 @@ module DomManager
   end
 
   def update_element(parent_node, current_node_obj, new_node_obj, current_node_index = 0)
-    if !current_node_obj
+    unless current_node_obj
       parent_node.appendChild(create_element(new_node_obj))
       return
     end
 
     current_node = parent_node[:childNodes][current_node_index]
 
-    if !new_node_obj
+    unless new_node_obj
       parent_node.removeChild(current_node)
       return
     end
@@ -67,18 +69,18 @@ module DomManager
       )
     end
 
-    if v_node?(current_node_obj) && v_node?(new_node_obj)
-      [current_node_obj[:children].size, new_node_obj[:children].size].max.times do |i|
-        current_node_child_obj = i < current_node_obj[:children].size ? current_node_obj[:children][i] : nil
-        new_node_child_obj = i < new_node_obj[:children].size ? new_node_obj[:children][i] : nil
+    return unless v_node?(current_node_obj) && v_node?(new_node_obj)
 
-        update_element(
-          current_node,
-          current_node_child_obj,
-          new_node_child_obj,
-          i
-        )
-      end
+    [current_node_obj[:children].size, new_node_obj[:children].size].max.times do |i|
+      current_node_child_obj = i < current_node_obj[:children].size ? current_node_obj[:children][i] : nil
+      new_node_child_obj = i < new_node_obj[:children].size ? new_node_obj[:children][i] : nil
+
+      update_element(
+        current_node,
+        current_node_child_obj,
+        new_node_child_obj,
+        i
+      )
     end
   end
 
@@ -100,34 +102,23 @@ module DomManager
   end
 
   def change_type(a, b)
-    if a.class != b.class
-      return ChangeType::Type
-    end
+    return ChangeType::Type if a.class != b.class
 
-    if !v_node?(a) && a != b
-      return ChangeType::Text
-    end
+    return ChangeType::Text if !v_node?(a) && a != b
 
     if v_node?(a) && v_node?(b)
-      if a[:node_name] != b[:node_name]
-        return ChangeType::Node
-      end
+      return ChangeType::Node if a[:node_name] != b[:node_name]
 
-      if a[:attributes][:value] != b[:attributes][:value]
-        return ChangeType::Value
-      end
+      return ChangeType::Value if a[:attributes][:value] != b[:attributes][:value]
 
-      if a[:attributes].to_s != b[:attributes].to_s
-        return ChangeType::Attr
-      end
+      return ChangeType::Attr if a[:attributes].to_s != b[:attributes].to_s
     end
 
-    return ChangeType::None
+    ChangeType::None
   end
 
-
   def v_node?(node)
-    return node.is_a?(Hash)
+    node.is_a?(Hash)
   end
 
   def event_attr?(attribute)
